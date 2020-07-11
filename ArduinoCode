@@ -1,0 +1,64 @@
+#include<Servo.h>
+#include<IRremote.h>
+IRrecv ir(7);
+decode_results result;
+Servo lift;
+Servo door;
+void setup()
+{
+  lift.attach(9);
+  door.attach(6);
+  pinMode(13,INPUT_PULLUP); //Button for Ground Floor
+  pinMode(12,INPUT_PULLUP); //Button for First Floor
+  pinMode(11,INPUT_PULLUP); //Button for Second Floor
+  pinMode(8,OUTPUT);
+  pinMode(7,INPUT);
+  ir.enableIRIn();
+  pinMode(A0,INPUT);
+  Serial.begin(9600);
+}
+void loop()
+{
+  int temp=analogRead(A0); //Reading the analog value of temperature sensor
+  if(digitalRead(13)==0) //if user presses the Ground Floor button
+  {
+    lift.write(0); //Elevator moves to the Ground Floor
+    Serial.println("Ground Floor");
+  }
+  if(digitalRead(12)==0) //if user presses the First Floor button
+  {
+    lift.write(90); //Elevator moves to the First Floor
+    Serial.println("First Floor");
+    delay(1000);
+    door.write(90); //Elevator door opens
+    delay(1000);
+    door.write(0); //Elevator door closes
+    delay(1000);
+  }
+  if(digitalRead(11)==0) //if user presses the Second Floor button
+  {
+    lift.write(180); //Elevator moves to the Second Floor
+    Serial.println("Second Floor");
+    delay(1000);
+    door.write(90); //Elevator door opens
+    delay(1000);
+    door.write(0); //Elevator door closes
+     delay(1000);
+  }
+  if(ir.decode(&result)) //proceeds if any button of IR remote is pressed
+  {
+    //Serial.println(result.value,HEX);
+    ir.resume(); 
+    if(result.value==0xFD08F7) //checks if the button pressed is 1. FD08F7 is the code for button 1. Here, it indicates that any object is detected.     
+    {
+      door.write(90); //door opens
+      Serial.println("Alert!"); //Alerts the person to remove the object from the doorside so that the door can close.
+    }
+    if(result.value==0xFD30CF)//checks if the button pressed is 0. FD30CF is the code for button 0. Here, it indicates that no object is detected.
+      door.write(0); //door closes
+  }
+  if(temp>=153) //checks and proceeds if the temperature value is equal to or more than 153 (25 degree celsius)
+    digitalWrite(8,1); //Fan turns ON
+  else
+    digitalWrite(8,0); //Fan turns OFF    
+}
