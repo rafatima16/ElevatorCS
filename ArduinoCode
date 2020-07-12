@@ -1,4 +1,7 @@
 #include<Servo.h>
+#include<IRremote.h>
+IRrecv ir(7);
+decode_results result;
 Servo lift;
 Servo door;
 void setup()
@@ -8,11 +11,10 @@ void setup()
   pinMode(13,INPUT_PULLUP); //Button for Ground Floor
   pinMode(12,INPUT_PULLUP); //Button for First Floor
   pinMode(11,INPUT_PULLUP); //Button for Second Floor
-  pinMode(10,INPUT_PULLUP); //Button for Emergency Alarm
   pinMode(8,OUTPUT);
-  pinMode(5,OUTPUT);
   pinMode(7,INPUT);
   pinMode(A0,INPUT);
+  ir.enableIRIn();
   Serial.begin(9600);
 }
 void loop()
@@ -43,22 +45,20 @@ void loop()
     door.write(0); //Elevator door closes
      delay(1000);
   }
-  if(digitalRead(7)==1) //object detected
+   if(ir.decode(&result)) //proceeds if a button is pressed from IR remote
   {
-      door.write(90); //door opens
+    //Serial.println(result.value,HEX);
+    ir.resume();
+    if(result.value==0xFD08F7) //if 1 is pressed, indicating that the object is detected   
+    {
+      door.write(90); //door is open
       Serial.println("Alert!");
-  }
-    if(digitalRead(7)==0) //no object detected
+    }
+    if(result.value==0xFD30CF) //if 0 is pressed, indicating that no object is detected
       door.write(0); //door closes
+  }
   if(temp>=153) //checks and proceeds if the temperature value is equal to or more than 153 (25 degree celsius)
     digitalWrite(8,1); //Fan turns ON
   else
     digitalWrite(8,0); //Fan turns OFF 
-  if(digitalRead(10)==0) //if user presses the Emergency Alarm button
-  {
-    tone(5,500); //buzzer buzzes
-    delay(1000);
-    Serial.println("Emergency");
-    noTone(5);
-  }
 }
